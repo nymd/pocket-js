@@ -14,7 +14,7 @@
     "scripts": {
         "test:unit": "nyc mocha --require ts-node/register \"tests/src/unit/**/*.ts\" --timeout 0 --exit",
         "test:integration": "nyc mocha --require ts-node/register \"tests/src/integration/**/*.ts\" --timeout 0 --exit",
-        "build": "rm -r lib & cti create ./src & npm run lint & tsc",
+        "build": "rm -r lib & cti create ./src & webpack",
         "prepare": "rm -r lib & cti create ./src & npm run lint & tsc",
         "prepackage": "rm -r lib & cti create ./src & npm run lint & tsc",
         "format": "prettier --write \"src/**/*.ts\" \"src/**/*.js\"",
@@ -86,9 +86,12 @@
         "nyc": "^15.0.0",
         "prettier": "^1.19.1",
         "source-map-support": "^0.5.16",
+        "ts-loader": "^6.2.1",
         "ts-node": "^8.6.2",
         "tslint": "^5.20.1",
         "tslint-config-prettier": "^1.18.0",
-        "typescript": "^3.7.2"
+        "typescript": "^3.7.2",
+        "webpack": "^4.41.6",
+        "webpack-cli": "^3.3.11"
     }
 }
