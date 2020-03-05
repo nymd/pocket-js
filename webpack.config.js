@@ -25,10 +25,7 @@ module.exports = {
   },
   mode: "development",
   optimization: {
-    concatenateModules: true,
-    minimize: true,
-    splitChunks: {
-        chunks: 'all'
-    }
+    concatenateModules: false,
+    minimize: false
   }
 };
