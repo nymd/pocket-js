@@ -4,7 +4,7 @@
 import {MajorityResponse} from "./majority-response"
 import {MinorityResponse} from "./minority-response"
 import {validateChallengeRequest} from "../../../utils/validator"
-import {typeGuard, Hex} from "../../../utils"
+import {typeGuard} from "../../../utils"
 
 
 export class ChallengeRequest {
@@ -30,7 +30,7 @@ export class ChallengeRequest {
 
     public readonly majorityResponse: MajorityResponse
     public readonly minorityResponse: MinorityResponse
-
+    
     /**
      * Challenge Request.
      * @constructor
