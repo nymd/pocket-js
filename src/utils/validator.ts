@@ -1,9 +1,12 @@
 import {ChallengeRequest} from "../rpc/models/input/challenge-request"
 import {Hex} from "./hex"
-import {RelayProof, RelayResponse} from "../rpc/models"
+import {RelayProof, RelayResponse, RelayMeta, RequestHash} from "../rpc/models"
 import {typeGuard} from "./type-guard"
 import {MajorityResponse} from "../rpc/models/input/majority-response"
 import {validateAddressHex} from "./key-pair"
+import { InMemoryKVStore } from "../storage/in-memory-kv-store"
+import { Keybase } from "../keybase"
+import { sha3_256 } from "js-sha3"
 
 
 /**
@@ -11,14 +14,14 @@ import {validateAddressHex} from "./key-pair"
  * @param {ChallengeRequest} request - The ChallengeRequest to be evaluated.
  * @returns {Error | undefined}.
  */
-export function validateChallengeRequest(request: ChallengeRequest): Error | undefined {
+export async function validateChallengeRequest(request: ChallengeRequest): Promise<Error | undefined> {
     switch (true) {
         case typeGuard(validateRelayResponse(request.minorityResponse.relay), Error):
-            return validateRelayResponse(request.minorityResponse.relay) as Error
+            return await validateRelayResponse(request.minorityResponse.relay) as Error
         case request.majorityResponse.relays.length !== 2:
             return new Error("Invalid majority request. The amount of relays needs to be equals to 2")
         case typeGuard(validateMajorityResponse(request.majorityResponse), Error):
-            return validateMajorityResponse(request.majorityResponse) as Error
+            return await validateMajorityResponse(request.majorityResponse) as Error
         default:
             return undefined
     }
@@ -29,10 +32,10 @@ export function validateChallengeRequest(request: ChallengeRequest): Error | und
  * @param {MajorityResponse} response - The MajorityResponse to be evaluated.
  * @returns {Error | undefined}.
  */
-export function validateMajorityResponse(response: MajorityResponse): Error | undefined {
+export async function validateMajorityResponse(response: MajorityResponse): Promise<Error | undefined> {
     let result: Error | undefined
-    response.relays.forEach(relay => {
-        result = validateRelayResponse(relay)
+    response.relays.forEach(async (relay) =>  {
+        result = await validateRelayResponse(relay)
     })
     return result
 }
@@ -42,9 +45,22 @@ export function validateMajorityResponse(response: MajorityResponse): Error | un
  * @param {RelayResponse} relay - The Relay response to be evaluated.
  * @returns {Error | undefined}.
  */
-export function validateRelayResponse(relay: RelayResponse): Error | undefined {
+export async function validateRelayResponse(relay: RelayResponse): Promise<Error | undefined>{
+    const keybase = new Keybase(new InMemoryKVStore())
+
+    const hash = sha3_256.create()
+    hash.update(JSON.stringify(relay.proof.toJSON()))
+
+    const payload = Buffer.from(hash.hex(), "hex")
+    const signerPubKeyBuffer = Buffer.from(relay.proof.servicerPubKey, "hex")
+    const signature = Buffer.from(relay.signature, "hex")
+
+    const isVerified = await keybase.verifySignature(signerPubKeyBuffer, payload, signature)
     switch (true) {
+        
         // This should be a better check for validity
+        case !Hex.isHex(relay.signature):
+            return new Error("Invalid string is not hex: " + relay.signature)
         case !Hex.isHex(relay.signature):
             return new Error("Invalid string is not hex: " + relay.signature)
         default:
@@ -65,8 +81,8 @@ export function validateRelayProof(proof: RelayProof): Error | undefined  {
             return new Error("Invalid entropy. The entropy needs to be a number: " + proof.entropy)
         case !Hex.isHex(proof.signature):
             return new Error("Invalid string is not hex: " + proof.signature)
-        case !Hex.isHex(proof.servicePubKey):
-            return new Error("Invalid string is not hex: " + proof.servicePubKey)
+        case !Hex.isHex(proof.servicerPubKey):
+            return new Error("Invalid string is not hex: " + proof.servicerPubKey)
         case Number(proof.sessionBlockHeight) === 0:
             return new Error("The Block Height needs to be bigger than 0")
         case !proof.token.isValid():
