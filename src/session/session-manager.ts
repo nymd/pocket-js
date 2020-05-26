@@ -116,19 +116,24 @@ export class SessionManager {
   ): Promise<Session | RpcError> {
 
     const key = this.getSessionKey(pocketAAT, chain)
+    console.log("session key: " + key)
     if (!this.sessionMap.has(key)) {
+      console.log("session key NOT FOUND, requesting new")
       return await this.requestCurrentSession(pocketAAT, chain, configuration, sessionBlockHeight)
     }
 
     const currentSession = (this.sessionMap.get(key) as Queue<Session>).front
     if (currentSession !== undefined) {
+      console.log("session key FOUND")
       if (currentSession.getBlocksSinceCreation(configuration) >= configuration.sessionBlockFrequency) {
+        console.log("session key REQUESTING NEW")
         return await this.requestCurrentSession(pocketAAT, chain, configuration, sessionBlockHeight)
       } else {
+        console.log("session key RETURNING CURRENT")
         return currentSession
       }
     }
-
+    console.log("session key WOMP WOMP 500")
     return new RpcError("500", "Session not found")
   }
 
